@@ -1,0 +1,68 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net472</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <UseWPF>true</UseWPF>
+    <AssemblyName>SpoutlookAddin</AssemblyName>
+    <RootNamespace>SpoutlookAddin</RootNamespace>
+    <AddInEntryPoint>SpoutlookAddin.ThisAddIn</AddInEntryPoint>
+    <Nullable>enable</Nullable>
+    <LangVersion>9.0</LangVersion>
+    <!-- VSTO requires COMVisible for the add-in class -->
+    <AllowUnsafeBlocks>false</AllowUnsafeBlocks>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Office / VSTO interop -->
+    <Reference Include="Microsoft.Office.Interop.Outlook">
+      <HintPath>$(ProgramFiles)\Microsoft Visual Studio\Shared\Visual Studio Tools for Office\PIA\Office15\Microsoft.Office.Interop.Outlook.dll</HintPath>
+      <EmbedInteropTypes>false</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="office">
+      <HintPath>$(ProgramFiles)\Microsoft Visual Studio\Shared\Visual Studio Tools for Office\PIA\Office15\office.dll</HintPath>
+      <EmbedInteropTypes>false</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="Microsoft.Office.Tools.Common">
+      <HintPath>$(VSINSTALLDIR)\Common7\IDE\PublicAssemblies\Microsoft.Office.Tools.Common.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Office.Tools.Common.v4.0.Utilities">
+      <HintPath>$(VSINSTALLDIR)\Common7\IDE\PublicAssemblies\Microsoft.Office.Tools.Common.v4.0.Utilities.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Office.Tools.Outlook">
+      <HintPath>$(VSINSTALLDIR)\Common7\IDE\PublicAssemblies\Microsoft.Office.Tools.Outlook.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Office.Tools.Outlook.v4.0.Utilities">
+      <HintPath>$(VSINSTALLDIR)\Common7\IDE\PublicAssemblies\Microsoft.Office.Tools.Outlook.v4.0.Utilities.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.VisualStudio.Tools.Applications.Runtime">
+      <HintPath>$(VSINSTALLDIR)\Common7\IDE\PublicAssemblies\Microsoft.VisualStudio.Tools.Applications.Runtime.dll</HintPath>
+    </Reference>
+
+    <!-- WPF ElementHost -->
+    <Reference Include="WindowsFormsIntegration" />
+
+    <!-- Standard .NET -->
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Security" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xaml" />
+    <Reference Include="PresentationCore" />
+    <Reference Include="PresentationFramework" />
+    <Reference Include="WindowsBase" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Embed Ribbon.xml so it can be loaded via GetManifestResourceStream -->
+    <EmbeddedResource Include="Ribbon.xml"/>
+  </ItemGroup>
+
+</Project>

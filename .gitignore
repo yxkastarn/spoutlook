@@ -1,7 +1,28 @@
-node_modules/
-package-lock.json
-*.user
-*.suo
+# Build outputs
 bin/
 obj/
+*.user
+*.suo
 .vs/
+
+# NuGet packages (restored by dotnet restore)
+packages/
+*.nupkg
+
+# ClickOnce publish output
+publish/
+
+# Visual Studio installer output
+Setup/Release/
+Setup/Debug/
+
+# Sensitive configuration – do NOT commit a real Spotify Client ID
+# SpoutlookAddin/app.config
+
+# Node (web add-in dev server)
+node_modules/
+package-lock.json
+
+# OS
+.DS_Store
+Thumbs.db
