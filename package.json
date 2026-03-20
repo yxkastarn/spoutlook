@@ -1,0 +1,15 @@
+{
+  "name": "spoutlook",
+  "version": "1.0.0",
+  "description": "Outlook add-in miniplayer for Spotify and TuneIn",
+  "scripts": {
+    "start": "npx http-server src -p 3000 --cors",
+    "lint": "npx eslint src/**/*.js"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0",
+    "http-server": "^14.1.1"
+  },
+  "keywords": ["outlook", "addin", "spotify", "tunein", "miniplayer"],
+  "license": "MIT"
+}

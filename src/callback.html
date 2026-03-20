@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="sv">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Spotify – loggar in…</title>
+    <style>
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #121212;
+        color: #e0e0e0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        margin: 0;
+        text-align: center;
+        gap: 12px;
+        flex-direction: column;
+      }
+      p { font-size: 14px; color: #888; }
+    </style>
+  </head>
+  <body>
+    <p>Ansluter till Spotify…</p>
+    <script>
+      (function () {
+        var hash = window.location.hash;
+        if (!hash) { document.querySelector("p").textContent = "Inloggning misslyckades."; return; }
+        var params = new URLSearchParams(hash.slice(1));
+        var token = params.get("access_token");
+        var error = params.get("error");
+        if (error || !token) {
+          document.querySelector("p").textContent = "Inloggning misslyckades: " + (error || "okänt fel");
+          return;
+        }
+        // Pass the token back to the opener (task pane)
+        if (window.opener && typeof window.opener.onSpotifyToken === "function") {
+          window.opener.onSpotifyToken(token);
+          window.close();
+        } else {
+          document.querySelector("p").textContent = "Token mottagen – du kan stänga detta fönster.";
+        }
+      })();
+    </script>
+  </body>
+</html>
