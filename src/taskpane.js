@@ -257,7 +257,8 @@ async function loadPopularStations() {
   const list = document.getElementById("tunein-popular-list");
   try {
     const res = await fetch(
-      `${RADIO_API_BASE}/stations/topvote?limit=20&hidebroken=true&has_extended_info=false`,
+      // hidebroken=true excludes stations with broken stream URLs
+      `${RADIO_API_BASE}/stations/topvote?limit=20&hidebroken=true`,
       { headers: { "User-Agent": "Spoutlook/1.0 (github.com/yxkastarn/spoutlook)" } }
     );
     if (!res.ok) throw new Error("Radio API svarade " + res.status);

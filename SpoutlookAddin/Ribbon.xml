@@ -4,11 +4,11 @@
   <ribbon>
     <tabs>
       <tab idMso="TabMail">
-        <group id="SpoutlookGroup" label="Spotify">
+        <group id="SpoutlookGroup" label="Spoutlook">
           <toggleButton id="BtnTogglePlayer"
                         label="Mini Player"
-                        screentip="Spotify Mini Player"
-                        supertip="Toggle the Spotify mini-player pane"
+                        screentip="Spoutlook Mini Player"
+                        supertip="Toggle the Spoutlook mini-player (Spotify or TuneIn)"
                         size="large"
                         imageMso="MusicInsert"
                         onAction="BtnTogglePlayer_Click"

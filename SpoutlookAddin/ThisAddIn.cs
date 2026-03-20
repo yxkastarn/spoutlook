@@ -36,7 +36,7 @@ namespace SpoutlookAddin
             _apiClient = new SpotifyApiClient(_auth);
 
             _hostControl = new MiniPlayerHostControl(_auth, _apiClient);
-            _taskPane    = CustomTaskPanes.Add(_hostControl, "Spotify");
+            _taskPane    = CustomTaskPanes.Add(_hostControl, "Spoutlook");
             _taskPane.Width   = 280;
             _taskPane.Visible = false;
 
