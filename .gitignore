@@ -1,0 +1,24 @@
+# Build outputs
+bin/
+obj/
+*.user
+*.suo
+.vs/
+
+# NuGet packages (restored by dotnet restore)
+packages/
+*.nupkg
+
+# ClickOnce publish output
+publish/
+
+# Visual Studio installer output
+Setup/Release/
+Setup/Debug/
+
+# Sensitive configuration – do NOT commit a real Spotify Client ID
+# SpoutlookAddin/app.config
+
+# OS
+.DS_Store
+Thumbs.db
