@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="sv">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Spoutlook</title>
+    <link rel="stylesheet" href="taskpane.css" />
+  </head>
+  <body>
+    <div id="app">
+      <!-- Header with source selector -->
+      <header class="header">
+        <h1 class="app-title">🎵 Spoutlook</h1>
+        <div class="source-selector" role="group" aria-label="Välj musikkälla">
+          <button
+            id="btn-spotify"
+            class="source-btn active"
+            aria-pressed="true"
+            onclick="selectSource('spotify')"
+          >
+            <svg class="source-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+            </svg>
+            Spotify
+          </button>
+          <button
+            id="btn-tunein"
+            class="source-btn"
+            aria-pressed="false"
+            onclick="selectSource('tunein')"
+          >
+            <svg class="source-icon" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/>
+            </svg>
+            TuneIn
+          </button>
+        </div>
+      </header>
+
+      <!-- Spotify Panel -->
+      <section id="panel-spotify" class="panel active" aria-label="Spotify">
+        <!-- Login state -->
+        <div id="spotify-login" class="state-view">
+          <p class="description">Logga in på Spotify för att lyssna.</p>
+          <button class="primary-btn spotify-btn" id="spotify-connect-btn" onclick="connectSpotify()">
+            <svg viewBox="0 0 24 24" class="btn-icon" aria-hidden="true">
+              <path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/>
+            </svg>
+            Anslut Spotify
+          </button>
+          <p class="hint">Kräver Spotify Premium för uppspelning.</p>
+        </div>
+
+        <!-- Connected / player state -->
+        <div id="spotify-player" class="state-view hidden">
+          <div id="spotify-embed-container">
+            <!-- Spotify embed injected here -->
+          </div>
+          <div class="search-row">
+            <input
+              id="spotify-search-input"
+              type="search"
+              placeholder="Sök låt, album eller artist…"
+              aria-label="Sök på Spotify"
+              oninput="debounceSpotifySearch(this.value)"
+            />
+          </div>
+          <ul id="spotify-results" class="results-list" aria-label="Sökresultat" role="listbox"></ul>
+          <button class="secondary-btn" onclick="disconnectSpotify()">Logga ut</button>
+        </div>
+      </section>
+
+      <!-- TuneIn Panel -->
+      <section id="panel-tunein" class="panel hidden" aria-label="TuneIn">
+        <div class="search-row">
+          <input
+            id="tunein-search-input"
+            type="search"
+            placeholder="Sök radiokanal…"
+            aria-label="Sök TuneIn-kanaler"
+            oninput="debounceTuneInSearch(this.value)"
+          />
+        </div>
+        <div id="tunein-popular" class="channel-section">
+          <h2 class="section-title">Populära kanaler</h2>
+          <ul id="tunein-popular-list" class="results-list" aria-label="Populära kanaler" role="listbox">
+            <li class="loading">Laddar…</li>
+          </ul>
+        </div>
+        <div id="tunein-search-results-section" class="channel-section hidden">
+          <h2 class="section-title">Sökresultat</h2>
+          <ul id="tunein-results" class="results-list" aria-label="Sökresultat" role="listbox"></ul>
+        </div>
+        <div id="tunein-player-container" class="player-container hidden">
+          <div class="now-playing-bar">
+            <span id="tunein-now-playing-name" class="now-playing-name"></span>
+            <button class="icon-btn stop-btn" aria-label="Stoppa" onclick="stopTuneIn()">■</button>
+          </div>
+          <iframe
+            id="tunein-embed"
+            title="TuneIn Player"
+            frameborder="0"
+            allowtransparency="true"
+            scrolling="no"
+            src=""
+          ></iframe>
+        </div>
+      </section>
+
+      <!-- Status / error toast -->
+      <div id="status-toast" class="toast hidden" role="alert" aria-live="polite"></div>
+    </div>
+
+    <script src="taskpane.js"></script>
+  </body>
+</html>

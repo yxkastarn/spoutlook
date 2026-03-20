@@ -1,13 +1,14 @@
 # spoutlook
 
-A **Spotify mini-player plugin for Classic Outlook** (VSTO Add-in).
+A **Spotify & TuneIn mini-player plugin for Classic Outlook** (VSTO Add-in).
 
-Log in with your Spotify account and control playback directly from an Outlook task pane — no need to switch windows.
+Log in with your Spotify account or browse TuneIn radio channels and control playback directly from an Outlook task pane — no need to switch windows.
 
 ---
 
 ## Features
 
+### Spotify
 | Feature | Details |
 |---|---|
 | 🎵 Now-playing | Shows track name, artist, and album art |
@@ -19,24 +20,39 @@ Log in with your Spotify account and control playback directly from an Outlook t
 | 💾 Persistent login | Tokens saved in isolated storage; stay logged in across Outlook restarts |
 | 🔄 Auto-refresh | Access token refreshed transparently before it expires |
 
+### TuneIn / Radio
+| Feature | Details |
+|---|---|
+| 📻 Browse stations | Popular stations loaded automatically from Radio Browser API |
+| 🔍 Search | Real-time station search by name |
+| ▶ Stream | One-click playback via `MediaElement` |
+| ⏹ Stop | Stop the current stream at any time |
+
 ---
 
 ## Architecture
 
 ```
 SpoutlookAddin/
-├── SpoutlookAddin.csproj     – SDK-style project (net472, WPF + WinForms)
-├── ThisAddIn.cs              – VSTO entry point; registers the Custom Task Pane
-├── Ribbon.xml                – Ribbon XML (embedded resource)
-├── Ribbon.cs                 – IRibbonExtensibility; "Mini Player" toggle button
-├── MiniPlayerHostControl.cs  – WinForms ElementHost wrapper (required by VSTO CTP)
-├── MiniPlayerControl.xaml    – WPF UI (album art, controls, sliders)
-├── MiniPlayerControl.xaml.cs – UI code-behind (polling, button handlers)
-├── SpotifyAuth.cs            – OAuth 2.0 PKCE login + token storage
-├── SpotifyApiClient.cs       – Spotify Web API calls (play, pause, next, …)
-├── SpotifyModels.cs          – JSON response models
+├── SpoutlookAddin.csproj       – SDK-style project (net472, WPF + WinForms)
+├── ThisAddIn.cs                – VSTO entry point; registers the Custom Task Pane
+├── Ribbon.xml                  – Ribbon XML (embedded resource)
+├── Ribbon.cs                   – IRibbonExtensibility; "Mini Player" toggle button
+├── MiniPlayerHostControl.cs    – WinForms ElementHost wrapper (required by VSTO CTP)
+├── MiniPlayerControl.xaml      – WPF UI: source selector + Spotify + TuneIn panels
+├── MiniPlayerControl.xaml.cs   – UI code-behind (polling, button handlers, TuneIn)
+├── SpotifyAuth.cs              – OAuth 2.0 PKCE login + token storage
+├── SpotifyApiClient.cs         – Spotify Web API calls (play, pause, next, …)
+├── SpotifyModels.cs            – JSON response models
+├── TuneInClient.cs             – Radio Browser API wrapper (search + top stations)
+├── TuneInModels.cs             – Radio Browser JSON models
 ├── app.config
 └── Properties/AssemblyInfo.cs
+
+src/                            – Optional Office Add-in (web) for Outlook on the web
+├── taskpane.html / .css / .js
+├── callback.html
+└── commands.html
 ```
 
 ---
@@ -51,7 +67,8 @@ SpoutlookAddin/
 | Outlook | Classic Outlook 2016, 2019, 2021, or Microsoft 365 |
 | Spotify account | Free or Premium (\*) |
 
-> \* Playback control via the Web API requires a **Spotify Premium** account.
+> \* Playback control via the Spotify Web API requires a **Spotify Premium** account.  
+> TuneIn radio playback works with any account via the free [Radio Browser API](https://api.radio-browser.info/).
 
 ---
 
@@ -73,49 +90,33 @@ Open `SpoutlookAddin/app.config` and replace the placeholder value:
 ```
 
 > **Do not** commit `app.config` with a real Client ID to public version control.
-> You can add it to `.gitignore` or use a user-specific override file.
 
-### 3. Build & deploy
+### 3. Build & install
 
-```powershell
-# Open Developer PowerShell for VS (or use Visual Studio)
-cd SpoutlookAddin
-dotnet restore
-dotnet build -c Release
-```
-
-Then in Visual Studio, right-click the project → **Publish** (ClickOnce) or use the **Build → Publish** wizard to generate an installer.
-
-Alternatively, install directly for development:
-
-1. Open `SpoutlookAddin.sln` in Visual Studio.
-2. Press **F5** – Visual Studio will register the add-in and launch Outlook in debug mode.
-
-### 4. Using the add-in
-
-1. Open **Classic Outlook**.
-2. In the **Home** / **Mail** tab, click **Mini Player** in the **Spotify** group.
-3. The side pane opens. Click **Log in with Spotify**.
-4. Your browser opens the Spotify authorization page – grant access.
-5. The pane switches to the player view and starts showing what's playing.
+1. Open `SpoutlookAddin.csproj` in Visual Studio.
+2. Select **Debug** → **Start Debugging** (`F5`) to build and sideload the add-in.
+3. Outlook opens with the **Spoutlook** group in the Mail ribbon.
 
 ---
 
-## Security notes
+## Usage
 
-* Authentication uses **OAuth 2.0 Authorization Code with PKCE** – the app never sees your Spotify password.
-* Tokens are stored in .NET **Isolated Storage** (per-user, per-assembly), not in plain text on disk or in the registry.
-* The local callback server (`http://localhost:5678`) runs only for the duration of the login flow and is shut down immediately after receiving the code.
+1. Open an email in Outlook.
+2. Click **Mini Player** in the ribbon to open the task pane.
+3. Use the **Spotify / TuneIn** toggle at the top to choose your source.
 
----
+### Spotify
+- Click **Log in to Spotify** and complete the OAuth flow in the browser window.
+- The player shows the currently playing track with full controls.
 
-## Contributing
-
-Pull requests are welcome. For major changes, open an issue first to discuss what you would like to change.
+### TuneIn
+- Popular stations load automatically.
+- Type in the search box to find stations by name.
+- Click a station to start streaming.
+- Click **Stop** to end playback.
 
 ---
 
 ## License
 
 MIT
-

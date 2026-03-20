@@ -19,6 +19,10 @@ Setup/Debug/
 # Sensitive configuration – do NOT commit a real Spotify Client ID
 # SpoutlookAddin/app.config
 
+# Node (web add-in dev server)
+node_modules/
+package-lock.json
+
 # OS
 .DS_Store
 Thumbs.db

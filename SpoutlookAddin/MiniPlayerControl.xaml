@@ -6,14 +6,15 @@
              FontFamily="Segoe UI">
 
     <UserControl.Resources>
-        <!-- Spotify green accent -->
+        <!-- Brand colours -->
         <SolidColorBrush x:Key="SpotifyGreen"  Color="#1DB954"/>
+        <SolidColorBrush x:Key="TuneInBlue"    Color="#00A0E3"/>
         <SolidColorBrush x:Key="TextPrimary"   Color="#FFFFFF"/>
         <SolidColorBrush x:Key="TextSecondary" Color="#B3B3B3"/>
         <SolidColorBrush x:Key="Surface"       Color="#282828"/>
         <SolidColorBrush x:Key="ButtonHover"   Color="#333333"/>
 
-        <!-- Flat button style -->
+        <!-- Flat icon button -->
         <Style x:Key="IconButton" TargetType="Button">
             <Setter Property="Background"  Value="Transparent"/>
             <Setter Property="BorderBrush" Value="Transparent"/>
@@ -35,6 +36,39 @@
                             </Trigger>
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter Property="Opacity" Value="0.4"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Source selector pill button -->
+        <Style x:Key="SourceButton" TargetType="Button">
+            <Setter Property="Foreground"   Value="{StaticResource TextSecondary}"/>
+            <Setter Property="Background"   Value="Transparent"/>
+            <Setter Property="BorderBrush"  Value="#444444"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Padding"      Value="8,5"/>
+            <Setter Property="Cursor"       Value="Hand"/>
+            <Setter Property="FontSize"     Value="12"/>
+            <Setter Property="FontWeight"   Value="SemiBold"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="Bd"
+                                Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="14"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="Bd" Property="Background"
+                                        Value="{StaticResource ButtonHover}"/>
                             </Trigger>
                         </ControlTemplate.Triggers>
                     </ControlTemplate>
@@ -91,7 +125,8 @@
 
     <Grid>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>   <!-- Logo row -->
+            <RowDefinition Height="Auto"/>   <!-- Header -->
+            <RowDefinition Height="Auto"/>   <!-- Source selector -->
             <RowDefinition Height="*"/>      <!-- Main content -->
         </Grid.RowDefinitions>
 
@@ -100,10 +135,8 @@
         <!-- ──────────────────────────────────────────────────────── -->
         <Border Grid.Row="0" Background="#000000" Padding="12,8">
             <DockPanel>
-                <!-- Spotify logo (text) -->
-                <TextBlock Text="Spotify" Foreground="{StaticResource SpotifyGreen}"
+                <TextBlock Text="Spoutlook" Foreground="{StaticResource TextPrimary}"
                            FontWeight="Bold" FontSize="16" VerticalAlignment="Center"/>
-                <!-- Logout / status -->
                 <Button x:Name="BtnLogout" Content="Log out" DockPanel.Dock="Right"
                         Foreground="{StaticResource TextSecondary}"
                         Background="Transparent" BorderBrush="Transparent"
@@ -113,151 +146,297 @@
         </Border>
 
         <!-- ──────────────────────────────────────────────────────── -->
-        <!-- Login panel (shown when not authenticated)               -->
+        <!-- Source selector                                           -->
         <!-- ──────────────────────────────────────────────────────── -->
-        <StackPanel x:Name="LoginPanel" Grid.Row="1"
-                    VerticalAlignment="Center" HorizontalAlignment="Center"
-                    Margin="16">
-            <TextBlock Text="Connect your Spotify account"
-                       Foreground="{StaticResource TextPrimary}"
-                       FontSize="14" FontWeight="SemiBold"
-                       TextWrapping="Wrap" TextAlignment="Center" Margin="0,0,0,8"/>
-            <TextBlock Text="Log in to control Spotify playback directly from Outlook."
-                       Foreground="{StaticResource TextSecondary}"
-                       FontSize="11" TextWrapping="Wrap" TextAlignment="Center"
-                       Margin="0,0,0,20"/>
-            <Button x:Name="BtnLogin" Content="Log in with Spotify"
-                    Background="{StaticResource SpotifyGreen}"
-                    Foreground="Black" FontWeight="Bold" FontSize="13"
-                    Padding="16,10" BorderBrush="Transparent"
-                    Cursor="Hand" HorizontalAlignment="Center"
-                    Click="BtnLogin_Click">
-                <Button.Style>
-                    <Style TargetType="Button">
-                        <Setter Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate TargetType="Button">
-                                    <Border Background="{TemplateBinding Background}"
-                                            CornerRadius="24"
-                                            Padding="{TemplateBinding Padding}">
-                                        <ContentPresenter HorizontalAlignment="Center"
-                                                          VerticalAlignment="Center"/>
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter Property="Background" Value="#1ED760"/>
-                                        </Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>
-                    </Style>
-                </Button.Style>
-            </Button>
-            <TextBlock x:Name="TxtLoginStatus"
-                       Foreground="{StaticResource TextSecondary}"
-                       FontSize="11" TextWrapping="Wrap" TextAlignment="Center"
-                       Margin="0,12,0,0" Visibility="Collapsed"/>
-        </StackPanel>
+        <Grid Grid.Row="1" Margin="8,6,8,2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="8"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Button x:Name="BtnSourceSpotify" Grid.Column="0"
+                    Style="{StaticResource SourceButton}"
+                    Content="♫  Spotify"
+                    Click="BtnSourceSpotify_Click"/>
+
+            <Button x:Name="BtnSourceTuneIn" Grid.Column="2"
+                    Style="{StaticResource SourceButton}"
+                    Content="📻  TuneIn"
+                    Click="BtnSourceTuneIn_Click"/>
+        </Grid>
 
         <!-- ──────────────────────────────────────────────────────── -->
-        <!-- Player panel (shown when authenticated)                  -->
+        <!-- Spotify section                                           -->
         <!-- ──────────────────────────────────────────────────────── -->
-        <StackPanel x:Name="PlayerPanel" Grid.Row="1"
-                    Visibility="Collapsed" Margin="0,0,0,8">
+        <Grid x:Name="SpotifySection" Grid.Row="2">
 
-            <!-- Album art -->
-            <Border Background="{StaticResource Surface}" Margin="12,12,12,0">
-                <Image x:Name="ImgAlbumArt" Height="236" Stretch="UniformToFill">
-                    <Image.Effect>
-                        <DropShadowEffect ShadowDepth="4" BlurRadius="8" Opacity="0.5"/>
-                    </Image.Effect>
-                </Image>
-            </Border>
-
-            <!-- Track info -->
-            <StackPanel Margin="12,10,12,0">
-                <TextBlock x:Name="TxtTrackName" Text="Not playing"
+            <!-- Login panel (shown when not authenticated) -->
+            <StackPanel x:Name="LoginPanel"
+                        VerticalAlignment="Center" HorizontalAlignment="Center"
+                        Margin="16">
+                <TextBlock Text="Connect your Spotify account"
                            Foreground="{StaticResource TextPrimary}"
                            FontSize="14" FontWeight="SemiBold"
-                           TextTrimming="CharacterEllipsis"/>
-                <TextBlock x:Name="TxtArtistName" Text="–"
+                           TextWrapping="Wrap" TextAlignment="Center" Margin="0,0,0,8"/>
+                <TextBlock Text="Log in to control Spotify playback directly from Outlook."
                            Foreground="{StaticResource TextSecondary}"
-                           FontSize="12" TextTrimming="CharacterEllipsis"
-                           Margin="0,2,0,0"/>
+                           FontSize="11" TextWrapping="Wrap" TextAlignment="Center"
+                           Margin="0,0,0,20"/>
+                <Button x:Name="BtnLogin" Content="Log in with Spotify"
+                        Background="{StaticResource SpotifyGreen}"
+                        Foreground="Black" FontWeight="Bold" FontSize="13"
+                        Padding="16,10" BorderBrush="Transparent"
+                        Cursor="Hand" HorizontalAlignment="Center"
+                        Click="BtnLogin_Click">
+                    <Button.Style>
+                        <Style TargetType="Button">
+                            <Setter Property="Template">
+                                <Setter.Value>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border Background="{TemplateBinding Background}"
+                                                CornerRadius="24"
+                                                Padding="{TemplateBinding Padding}">
+                                            <ContentPresenter HorizontalAlignment="Center"
+                                                              VerticalAlignment="Center"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter Property="Background" Value="#1ED760"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Setter.Value>
+                            </Setter>
+                        </Style>
+                    </Button.Style>
+                </Button>
+                <TextBlock x:Name="TxtLoginStatus"
+                           Foreground="{StaticResource TextSecondary}"
+                           FontSize="11" TextWrapping="Wrap" TextAlignment="Center"
+                           Margin="0,12,0,0" Visibility="Collapsed"/>
             </StackPanel>
 
-            <!-- Progress bar -->
-            <Grid Margin="12,10,12,0">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-                <Slider x:Name="SliderProgress" Grid.Row="0"
-                        Style="{StaticResource SpotifySlider}"
-                        Minimum="0" Maximum="100" Value="0"
-                        IsMoveToPointEnabled="True"
-                        ValueChanged="SliderProgress_ValueChanged"
-                        PreviewMouseDown="SliderProgress_MouseDown"
-                        PreviewMouseUp="SliderProgress_MouseUp"/>
-                <DockPanel Grid.Row="1" Margin="0,4,0,0">
-                    <TextBlock x:Name="TxtPosition" Text="0:00"
-                               Foreground="{StaticResource TextSecondary}" FontSize="10"/>
-                    <TextBlock x:Name="TxtDuration" Text="0:00"
-                               Foreground="{StaticResource TextSecondary}" FontSize="10"
-                               DockPanel.Dock="Right"/>
+            <!-- Player panel (shown when authenticated) -->
+            <StackPanel x:Name="PlayerPanel"
+                        Visibility="Collapsed" Margin="0,0,0,8">
+
+                <!-- Album art -->
+                <Border Background="{StaticResource Surface}" Margin="12,12,12,0">
+                    <Image x:Name="ImgAlbumArt" Height="210" Stretch="UniformToFill">
+                        <Image.Effect>
+                            <DropShadowEffect ShadowDepth="4" BlurRadius="8" Opacity="0.5"/>
+                        </Image.Effect>
+                    </Image>
+                </Border>
+
+                <!-- Track info -->
+                <StackPanel Margin="12,10,12,0">
+                    <TextBlock x:Name="TxtTrackName" Text="Not playing"
+                               Foreground="{StaticResource TextPrimary}"
+                               FontSize="14" FontWeight="SemiBold"
+                               TextTrimming="CharacterEllipsis"/>
+                    <TextBlock x:Name="TxtArtistName" Text="–"
+                               Foreground="{StaticResource TextSecondary}"
+                               FontSize="12" TextTrimming="CharacterEllipsis"
+                               Margin="0,2,0,0"/>
+                </StackPanel>
+
+                <!-- Progress bar -->
+                <Grid Margin="12,10,12,0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <Slider x:Name="SliderProgress" Grid.Row="0"
+                            Style="{StaticResource SpotifySlider}"
+                            Minimum="0" Maximum="100" Value="0"
+                            IsMoveToPointEnabled="True"
+                            ValueChanged="SliderProgress_ValueChanged"
+                            PreviewMouseDown="SliderProgress_MouseDown"
+                            PreviewMouseUp="SliderProgress_MouseUp"/>
+                    <DockPanel Grid.Row="1" Margin="0,4,0,0">
+                        <TextBlock x:Name="TxtPosition" Text="0:00"
+                                   Foreground="{StaticResource TextSecondary}" FontSize="10"/>
+                        <TextBlock x:Name="TxtDuration" Text="0:00"
+                                   Foreground="{StaticResource TextSecondary}" FontSize="10"
+                                   DockPanel.Dock="Right"/>
+                    </DockPanel>
+                </Grid>
+
+                <!-- Playback controls -->
+                <DockPanel Margin="12,8,12,0" HorizontalAlignment="Center">
+                    <Button x:Name="BtnPrev" Style="{StaticResource IconButton}"
+                            Width="40" Height="40" Margin="4,0"
+                            Click="BtnPrev_Click" ToolTip="Previous">
+                        <Path Data="M6 6 L6 18 M6 12 L18 18 M18 6 L18 18"
+                              Stroke="White" StrokeThickness="2" StrokeLineJoin="Round"/>
+                    </Button>
+
+                    <Button x:Name="BtnPlayPause" Style="{StaticResource IconButton}"
+                            Width="48" Height="48" Margin="4,0"
+                            Click="BtnPlayPause_Click" ToolTip="Play / Pause">
+                        <Grid>
+                            <Ellipse Fill="White" Width="40" Height="40"/>
+                            <Path x:Name="IcoPlay"
+                                  Data="M14 8 L22 12 L14 16 Z"
+                                  Fill="#121212"/>
+                            <Path x:Name="IcoPause"
+                                  Data="M10 8 L10 16 M16 8 L16 16"
+                                  Stroke="#121212" StrokeThickness="2.5"
+                                  Visibility="Collapsed"/>
+                        </Grid>
+                    </Button>
+
+                    <Button x:Name="BtnNext" Style="{StaticResource IconButton}"
+                            Width="40" Height="40" Margin="4,0"
+                            Click="BtnNext_Click" ToolTip="Next">
+                        <Path Data="M18 6 L18 18 M18 12 L6 18 M6 6 L6 18"
+                              Stroke="White" StrokeThickness="2" StrokeLineJoin="Round"/>
+                    </Button>
                 </DockPanel>
-            </Grid>
 
-            <!-- Playback controls -->
-            <DockPanel Margin="12,8,12,0" HorizontalAlignment="Center">
-                <Button x:Name="BtnPrev" Style="{StaticResource IconButton}"
-                        Width="40" Height="40" Margin="4,0"
-                        Click="BtnPrev_Click" ToolTip="Previous">
-                    <Path Data="M6 6 L6 18 M6 12 L18 18 M18 6 L18 18"
-                          Stroke="White" StrokeThickness="2" StrokeLineJoin="Round"/>
-                </Button>
+                <!-- Volume -->
+                <DockPanel Margin="12,10,12,4">
+                    <Path DockPanel.Dock="Left"
+                          Data="M3 9 L3 15 L6 15 L11 19 L11 5 L6 9 Z M14 9 Q16 12 14 15"
+                          Stroke="{StaticResource TextSecondary}" StrokeThickness="1.5"
+                          Margin="0,0,6,0" VerticalAlignment="Center"/>
+                    <Slider x:Name="SliderVolume" Style="{StaticResource SpotifySlider}"
+                            Minimum="0" Maximum="100" Value="50"
+                            ValueChanged="SliderVolume_ValueChanged"/>
+                </DockPanel>
 
-                <Button x:Name="BtnPlayPause" Style="{StaticResource IconButton}"
-                        Width="48" Height="48" Margin="4,0"
-                        Click="BtnPlayPause_Click" ToolTip="Play / Pause">
-                    <!-- Play icon (triangle) shown when paused -->
-                    <Grid>
-                        <Ellipse Fill="White" Width="40" Height="40"/>
-                        <Path x:Name="IcoPlay"
-                              Data="M14 8 L22 12 L14 16 Z"
-                              Fill="#121212"/>
-                        <Path x:Name="IcoPause"
-                              Data="M10 8 L10 16 M16 8 L16 16"
-                              Stroke="#121212" StrokeThickness="2.5"
-                              Visibility="Collapsed"/>
-                    </Grid>
-                </Button>
+                <!-- Device name -->
+                <TextBlock x:Name="TxtDevice"
+                           Foreground="{StaticResource TextSecondary}"
+                           FontSize="10" Margin="12,2,12,0"
+                           TextTrimming="CharacterEllipsis"/>
+            </StackPanel>
+        </Grid>
 
-                <Button x:Name="BtnNext" Style="{StaticResource IconButton}"
-                        Width="40" Height="40" Margin="4,0"
-                        Click="BtnNext_Click" ToolTip="Next">
-                    <Path Data="M18 6 L18 18 M18 12 L6 18 M6 6 L6 18"
-                          Stroke="White" StrokeThickness="2" StrokeLineJoin="Round"/>
-                </Button>
-            </DockPanel>
+        <!-- ──────────────────────────────────────────────────────── -->
+        <!-- TuneIn section (hidden until TuneIn source selected)     -->
+        <!-- ──────────────────────────────────────────────────────── -->
+        <Grid x:Name="TuneInSection" Grid.Row="2" Visibility="Collapsed">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>   <!-- Search box -->
+                <RowDefinition Height="*"/>      <!-- Station list -->
+                <RowDefinition Height="Auto"/>   <!-- Now-playing bar -->
+            </Grid.RowDefinitions>
 
-            <!-- Volume -->
-            <DockPanel Margin="12,10,12,4">
-                <Path DockPanel.Dock="Left"
-                      Data="M3 9 L3 15 L6 15 L11 19 L11 5 L6 9 Z M14 9 Q16 12 14 15"
-                      Stroke="{StaticResource TextSecondary}" StrokeThickness="1.5"
-                      Margin="0,0,6,0" VerticalAlignment="Center"/>
-                <Slider x:Name="SliderVolume" Style="{StaticResource SpotifySlider}"
-                        Minimum="0" Maximum="100" Value="50"
-                        ValueChanged="SliderVolume_ValueChanged"/>
-            </DockPanel>
+            <!-- Search box -->
+            <Border Grid.Row="0" Margin="10,8,10,4"
+                    Background="#282828" CornerRadius="6"
+                    BorderBrush="#444" BorderThickness="1">
+                <TextBox x:Name="TxtTuneInSearch"
+                         Background="Transparent" BorderThickness="0"
+                         Foreground="{StaticResource TextPrimary}"
+                         CaretBrush="White"
+                         FontSize="12" Padding="8,6"
+                         VerticalContentAlignment="Center"
+                         TextChanged="TxtTuneInSearch_TextChanged"/>
+            </Border>
 
-            <!-- Device name -->
-            <TextBlock x:Name="TxtDevice"
-                       Foreground="{StaticResource TextSecondary}"
-                       FontSize="10" Margin="12,2,12,0"
-                       TextTrimming="CharacterEllipsis"/>
-        </StackPanel>
+            <!-- Placeholder text for search box -->
+            <TextBlock Grid.Row="0" Margin="18,0,10,0"
+                       Text="Sök radiokanal…"
+                       Foreground="#555555" FontSize="12"
+                       VerticalAlignment="Center" IsHitTestVisible="False"
+                       x:Name="TxtTuneInSearchHint"/>
+
+            <!-- Station list -->
+            <ListBox x:Name="LstStations" Grid.Row="1"
+                     Background="Transparent" BorderBrush="Transparent"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     SelectionChanged="LstStations_SelectionChanged">
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="Background"    Value="Transparent"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Padding"       Value="10,6"/>
+                        <Setter Property="Cursor"        Value="Hand"/>
+                        <Style.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#282828"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter Property="Background" Value="#333333"/>
+                            </Trigger>
+                        </Style.Triggers>
+                    </Style>
+                </ListBox.ItemContainerStyle>
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <StackPanel Margin="0,2">
+                            <TextBlock Text="{Binding Name}"
+                                       Foreground="{StaticResource TextPrimary}"
+                                       FontSize="12" FontWeight="SemiBold"
+                                       TextTrimming="CharacterEllipsis"/>
+                            <TextBlock Text="{Binding SubText}"
+                                       Foreground="{StaticResource TextSecondary}"
+                                       FontSize="10"
+                                       TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+
+            <!-- Now-playing bar -->
+            <Border x:Name="TuneInNowPlayingBar" Grid.Row="2"
+                    Background="#000000" Padding="10,6"
+                    Visibility="Collapsed">
+                <DockPanel>
+                    <Button x:Name="BtnTuneInStop" DockPanel.Dock="Right"
+                            Content="■ Stop"
+                            Foreground="#E74C3C" Background="Transparent"
+                            BorderBrush="#E74C3C" BorderThickness="1"
+                            FontSize="10" Padding="6,3" Cursor="Hand"
+                            Click="BtnTuneInStop_Click">
+                        <Button.Style>
+                            <Style TargetType="Button">
+                                <Setter Property="Template">
+                                    <Setter.Value>
+                                        <ControlTemplate TargetType="Button">
+                                            <Border Background="{TemplateBinding Background}"
+                                                    BorderBrush="{TemplateBinding BorderBrush}"
+                                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                                    CornerRadius="3"
+                                                    Padding="{TemplateBinding Padding}">
+                                                <ContentPresenter HorizontalAlignment="Center"
+                                                                  VerticalAlignment="Center"/>
+                                            </Border>
+                                            <ControlTemplate.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="Background" Value="#2A0000"/>
+                                                </Trigger>
+                                            </ControlTemplate.Triggers>
+                                        </ControlTemplate>
+                                    </Setter.Value>
+                                </Setter>
+                            </Style>
+                        </Button.Style>
+                    </Button>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="▶ Now playing"
+                                   Foreground="{StaticResource TuneInBlue}"
+                                   FontSize="9" FontWeight="Bold"/>
+                        <TextBlock x:Name="TxtTuneInNowPlaying"
+                                   Foreground="{StaticResource TextPrimary}"
+                                   FontSize="11" FontWeight="SemiBold"
+                                   TextTrimming="CharacterEllipsis"
+                                   MaxWidth="160"/>
+                    </StackPanel>
+                </DockPanel>
+            </Border>
+
+            <!-- MediaElement for TuneIn audio (invisible, manual control) -->
+            <MediaElement x:Name="TuneInMedia" Grid.Row="2"
+                          LoadedBehavior="Manual"
+                          UnloadedBehavior="Stop"
+                          Volume="0.8"
+                          Visibility="Collapsed"
+                          MediaFailed="TuneInMedia_MediaFailed"/>
+        </Grid>
     </Grid>
 </UserControl>

@@ -1,8 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 
@@ -12,31 +14,52 @@ namespace SpoutlookAddin
     /// Code-behind for <see cref="MiniPlayerControl"/>.
     ///
     /// Responsibilities:
-    ///   • Show login / player panels depending on auth state.
-    ///   • Poll <c>GET /me/player/currently-playing</c> every ~2 s.
-    ///   • Update track name, artist, album art, progress bar and volume.
-    ///   • Forward button clicks to <see cref="SpotifyApiClient"/>.
-    ///   • Surface <see cref="SpotifyApiException"/> errors to the user.
+    ///   • Switch between Spotify and TuneIn sources.
+    ///   • Spotify: show login / player panels depending on auth state.
+    ///     Poll <c>GET /me/player/currently-playing</c> every ~2 s.
+    ///   • TuneIn: browse popular stations, search by name, stream audio.
     /// </summary>
     public partial class MiniPlayerControl : UserControl, IDisposable
     {
+        // ------------------------------------------------------------------ //
+        //  Fields – Spotify
+        // ------------------------------------------------------------------ //
+
         private readonly SpotifyAuth      _auth;
         private readonly SpotifyApiClient _api;
-
         private readonly DispatcherTimer  _pollTimer;
         private readonly HttpClient       _imageClient = new HttpClient();
         private bool _disposed;
-
-        // Prevents seek-bar value-changed events from triggering seeks while we
-        // are updating it programmatically.
         private bool _suppressSliderEvents;
         private bool _userDraggingProgress;
         private bool _isPlaying;
+        private int    _currentTrackDurationMs;
+        private string _currentAlbumArtUrl = "";
+
+        // ------------------------------------------------------------------ //
+        //  Fields – TuneIn
+        // ------------------------------------------------------------------ //
+
+        private readonly TuneInClient      _tuneIn;
+        private          DispatcherTimer?  _tuneInSearchTimer;
+        private          string            _lastSearchText = "";
+
+        // ------------------------------------------------------------------ //
+        //  Fields – shared
+        // ------------------------------------------------------------------ //
+
+        /// <summary>Currently selected source: "spotify" or "tunein".</summary>
+        private string _source = "spotify";
+
+        // ------------------------------------------------------------------ //
+        //  Constructor
+        // ------------------------------------------------------------------ //
 
         public MiniPlayerControl(SpotifyAuth auth, SpotifyApiClient api)
         {
-            _auth = auth;
-            _api  = api;
+            _auth   = auth;
+            _api    = api;
+            _tuneIn = new TuneInClient();
 
             InitializeComponent();
 
@@ -48,7 +71,12 @@ namespace SpoutlookAddin
             };
             _pollTimer.Tick += async (_, __) => await PollSafeAsync();
 
-            UpdatePanelVisibility();
+            // Start with Spotify source selected
+            ApplySourceSelection();
+            UpdateSpotifyPanelVisibility();
+
+            // Load TuneIn popular stations in the background
+            _ = LoadPopularStationsAsync();
         }
 
         // ------------------------------------------------------------------ //
@@ -60,33 +88,91 @@ namespace SpoutlookAddin
             if (_disposed) return;
             _disposed = true;
             _pollTimer.Stop();
+            _tuneInSearchTimer?.Stop();
             _imageClient.Dispose();
+            _tuneIn.Dispose();
+            StopTuneIn();
         }
 
         // ------------------------------------------------------------------ //
         //  Public API called by MiniPlayerHostControl
         // ------------------------------------------------------------------ //
 
-        public void StartPolling() => _pollTimer.Start();
+        public void StartPolling() { if (_source == "spotify") _pollTimer.Start(); }
         public void StopPolling()  => _pollTimer.Stop();
 
         // ------------------------------------------------------------------ //
-        //  Auth events
+        //  Source selector
+        // ------------------------------------------------------------------ //
+
+        private void BtnSourceSpotify_Click(object sender, RoutedEventArgs e)
+        {
+            if (_source == "spotify") return;
+            _source = "spotify";
+            ApplySourceSelection();
+            // Resume polling if logged in
+            if (_auth.IsAuthenticated) _pollTimer.Start();
+        }
+
+        private void BtnSourceTuneIn_Click(object sender, RoutedEventArgs e)
+        {
+            if (_source == "tunein") return;
+            _source = "tunein";
+            ApplySourceSelection();
+            _pollTimer.Stop();
+        }
+
+        /// <summary>
+        /// Updates button appearance and panel visibility to match <see cref="_source"/>.
+        /// </summary>
+        private void ApplySourceSelection()
+        {
+            bool isSpotify = _source == "spotify";
+
+            // Spotify button: active = green background, black text
+            BtnSourceSpotify.Background = isSpotify
+                ? (Brush)new SolidColorBrush(Color.FromRgb(0x1D, 0xB9, 0x54))
+                : Brushes.Transparent;
+            BtnSourceSpotify.Foreground = isSpotify
+                ? Brushes.Black
+                : (Brush)FindResource("TextSecondary");
+            BtnSourceSpotify.BorderBrush = isSpotify
+                ? Brushes.Transparent
+                : (Brush)new SolidColorBrush(Color.FromRgb(0x44, 0x44, 0x44));
+
+            // TuneIn button: active = blue background, black text
+            BtnSourceTuneIn.Background = !isSpotify
+                ? (Brush)new SolidColorBrush(Color.FromRgb(0x00, 0xA0, 0xE3))
+                : Brushes.Transparent;
+            BtnSourceTuneIn.Foreground = !isSpotify
+                ? Brushes.Black
+                : (Brush)FindResource("TextSecondary");
+            BtnSourceTuneIn.BorderBrush = !isSpotify
+                ? Brushes.Transparent
+                : (Brush)new SolidColorBrush(Color.FromRgb(0x44, 0x44, 0x44));
+
+            // Show/hide content sections
+            SpotifySection.Visibility = isSpotify ? Visibility.Visible : Visibility.Collapsed;
+            TuneInSection.Visibility  = isSpotify ? Visibility.Collapsed : Visibility.Visible;
+        }
+
+        // ------------------------------------------------------------------ //
+        //  Spotify – auth events
         // ------------------------------------------------------------------ //
 
         private void OnTokensUpdated(object? sender, EventArgs e)
         {
             Dispatcher.Invoke(() =>
             {
-                UpdatePanelVisibility();
-                if (_auth.IsAuthenticated)
+                UpdateSpotifyPanelVisibility();
+                if (_auth.IsAuthenticated && _source == "spotify")
                     _pollTimer.Start();
                 else
                     _pollTimer.Stop();
             });
         }
 
-        private void UpdatePanelVisibility()
+        private void UpdateSpotifyPanelVisibility()
         {
             bool loggedIn = _auth.IsAuthenticated;
             LoginPanel.Visibility  = loggedIn ? Visibility.Collapsed : Visibility.Visible;
@@ -95,7 +181,7 @@ namespace SpoutlookAddin
         }
 
         // ------------------------------------------------------------------ //
-        //  Login / logout buttons
+        //  Spotify – login / logout
         // ------------------------------------------------------------------ //
 
         private async void BtnLogin_Click(object sender, RoutedEventArgs e)
@@ -111,7 +197,6 @@ namespace SpoutlookAddin
                 TxtLoginStatus.Text = "Login failed or timed out. Please try again.";
                 BtnLogin.IsEnabled  = true;
             }
-            // On success, OnTokensUpdated() will update the UI.
         }
 
         private void BtnLogout_Click(object sender, RoutedEventArgs e)
@@ -121,14 +206,12 @@ namespace SpoutlookAddin
         }
 
         // ------------------------------------------------------------------ //
-        //  Playback controls
+        //  Spotify – playback controls
         // ------------------------------------------------------------------ //
 
         private async void BtnPlayPause_Click(object sender, RoutedEventArgs e)
         {
             await RunApiCallAsync(_isPlaying ? _api.PauseAsync() : _api.PlayAsync());
-
-            // Optimistic UI update – confirmed by next poll tick.
             _isPlaying = !_isPlaying;
             UpdatePlayPauseIcon();
         }
@@ -140,7 +223,7 @@ namespace SpoutlookAddin
             await RunApiCallAsync(_api.NextAsync());
 
         // ------------------------------------------------------------------ //
-        //  Volume slider
+        //  Spotify – volume / progress sliders
         // ------------------------------------------------------------------ //
 
         private async void SliderVolume_ValueChanged(
@@ -149,10 +232,6 @@ namespace SpoutlookAddin
             if (_suppressSliderEvents) return;
             await RunApiCallAsync(_api.SetVolumeAsync((int)e.NewValue));
         }
-
-        // ------------------------------------------------------------------ //
-        //  Progress slider
-        // ------------------------------------------------------------------ //
 
         private void SliderProgress_MouseDown(object sender,
             System.Windows.Input.MouseButtonEventArgs e) =>
@@ -173,32 +252,19 @@ namespace SpoutlookAddin
             object sender, RoutedPropertyChangedEventArgs<double> e)
         {
             if (_suppressSliderEvents || !_userDraggingProgress) return;
-            // Update time label while dragging.
             var posMs = (int)(e.NewValue / 100.0 * _currentTrackDurationMs);
             TxtPosition.Text = FormatMs(posMs);
         }
 
         // ------------------------------------------------------------------ //
-        //  Polling
+        //  Spotify – polling
         // ------------------------------------------------------------------ //
-
-        private int    _currentTrackDurationMs;
-        private string _currentAlbumArtUrl = "";
 
         private async Task PollSafeAsync()
         {
-            try
-            {
-                await RefreshNowPlayingAsync();
-            }
-            catch (SpotifyApiException ex)
-            {
-                TxtDevice.Text = $"⚠ {ex.Message}";
-            }
-            catch
-            {
-                // Transient network errors are silently ignored between polls.
-            }
+            try   { await RefreshNowPlayingAsync(); }
+            catch (SpotifyApiException ex) { TxtDevice.Text = $"⚠ {ex.Message}"; }
+            catch { /* Transient network errors ignored between polls */ }
         }
 
         private async Task RefreshNowPlayingAsync()
@@ -215,15 +281,12 @@ namespace SpoutlookAddin
             _isPlaying = state.IsPlaying;
             UpdatePlayPauseIcon();
 
-            // Track metadata.
             TxtTrackName.Text  = state.Item.Name;
             TxtArtistName.Text = string.Join(", ", Array.ConvertAll(
                 state.Item.Artists, a => a.Name));
 
-            // Album art (only fetch when track changes).
             var artUrl = state.Item.Album?.Images.Length > 0
-                ? state.Item.Album.Images[0].Url
-                : "";
+                ? state.Item.Album.Images[0].Url : "";
 
             if (artUrl != _currentAlbumArtUrl)
             {
@@ -231,43 +294,30 @@ namespace SpoutlookAddin
                 await LoadAlbumArtAsync(artUrl);
             }
 
-            // Progress.
             if (!_userDraggingProgress)
             {
                 _currentTrackDurationMs = state.Item.DurationMs;
-
-                _suppressSliderEvents = true;
-                SliderProgress.Value = _currentTrackDurationMs > 0
-                    ? (double)state.ProgressMs / _currentTrackDurationMs * 100.0
-                    : 0;
-                _suppressSliderEvents = false;
-
+                _suppressSliderEvents   = true;
+                SliderProgress.Value    = _currentTrackDurationMs > 0
+                    ? (double)state.ProgressMs / _currentTrackDurationMs * 100.0 : 0;
+                _suppressSliderEvents   = false;
                 TxtPosition.Text = FormatMs(state.ProgressMs);
                 TxtDuration.Text = FormatMs(_currentTrackDurationMs);
             }
 
-            // Volume.
             if (state.Device?.VolumePercent is int vol)
             {
-                _suppressSliderEvents = true;
-                SliderVolume.Value    = vol;
-                _suppressSliderEvents = false;
+                _suppressSliderEvents  = true;
+                SliderVolume.Value     = vol;
+                _suppressSliderEvents  = false;
             }
 
-            // Device.
-            TxtDevice.Text = state.Device != null
-                ? $"🔊 {state.Device.Name}"
-                : "";
+            TxtDevice.Text = state.Device != null ? $"🔊 {state.Device.Name}" : "";
         }
 
         private async Task LoadAlbumArtAsync(string url)
         {
-            if (string.IsNullOrEmpty(url))
-            {
-                ImgAlbumArt.Source = null;
-                return;
-            }
-
+            if (string.IsNullOrEmpty(url)) { ImgAlbumArt.Source = null; return; }
             try
             {
                 var bytes = await _imageClient.GetByteArrayAsync(url);
@@ -280,30 +330,129 @@ namespace SpoutlookAddin
                 bmp.Freeze();
                 ImgAlbumArt.Source = bmp;
             }
+            catch { ImgAlbumArt.Source = null; }
+        }
+
+        // ------------------------------------------------------------------ //
+        //  TuneIn – station loading
+        // ------------------------------------------------------------------ //
+
+        private async Task LoadPopularStationsAsync()
+        {
+            try
+            {
+                var stations = await _tuneIn.GetTopStationsAsync();
+                Dispatcher.Invoke(() => PopulateStationList(stations));
+            }
             catch
             {
-                ImgAlbumArt.Source = null;
+                // Non-critical; list stays empty if the network is unavailable.
+            }
+        }
+
+        private void PopulateStationList(IReadOnlyList<RadioStation> stations)
+        {
+            LstStations.ItemsSource = stations;
+        }
+
+        // ------------------------------------------------------------------ //
+        //  TuneIn – search
+        // ------------------------------------------------------------------ //
+
+        private void TxtTuneInSearch_TextChanged(object sender, TextChangedEventArgs e)
+        {
+            var text = TxtTuneInSearch.Text;
+
+            // Show/hide placeholder hint
+            TxtTuneInSearchHint.Visibility =
+                string.IsNullOrEmpty(text) ? Visibility.Visible : Visibility.Collapsed;
+
+            // Debounce: restart 400 ms timer on every keystroke
+            _tuneInSearchTimer?.Stop();
+            _tuneInSearchTimer = new DispatcherTimer
+            {
+                Interval = TimeSpan.FromMilliseconds(400),
+            };
+            _tuneInSearchTimer.Tick += async (_, __) =>
+            {
+                _tuneInSearchTimer!.Stop();
+                if (text == _lastSearchText) return;
+                _lastSearchText = text;
+
+                if (string.IsNullOrWhiteSpace(text))
+                    await LoadPopularStationsAsync();
+                else
+                    await SearchStationsAsync(text);
+            };
+            _tuneInSearchTimer.Start();
+        }
+
+        private async Task SearchStationsAsync(string query)
+        {
+            try
+            {
+                var results = await _tuneIn.SearchStationsAsync(query);
+                Dispatcher.Invoke(() => PopulateStationList(results));
+            }
+            catch
+            {
+                // Search failed silently; list keeps previous results.
             }
         }
 
         // ------------------------------------------------------------------ //
-        //  Helpers
+        //  TuneIn – playback
         // ------------------------------------------------------------------ //
 
-        /// <summary>
-        /// Runs an API call and shows any <see cref="SpotifyApiException"/> in the
-        /// device label so the user gets immediate feedback.
-        /// </summary>
+        private void LstStations_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (LstStations.SelectedItem is RadioStation station)
+                PlayStation(station);
+        }
+
+        private void PlayStation(RadioStation station)
+        {
+            var streamUrl = station.StreamUrl;
+            if (string.IsNullOrWhiteSpace(streamUrl)) return;
+
+            // Only allow http/https streams
+            if (!Uri.TryCreate(streamUrl, UriKind.Absolute, out var uri) ||
+                (uri.Scheme != "http" && uri.Scheme != "https"))
+                return;
+
+            TuneInMedia.Source = uri;
+            TuneInMedia.Play();
+
+            TxtTuneInNowPlaying.Text      = station.Name;
+            TuneInNowPlayingBar.Visibility = Visibility.Visible;
+        }
+
+        private void BtnTuneInStop_Click(object sender, RoutedEventArgs e) => StopTuneIn();
+
+        private void StopTuneIn()
+        {
+            TuneInMedia.Stop();
+            TuneInMedia.Source            = null;
+            TuneInNowPlayingBar.Visibility = Visibility.Collapsed;
+            LstStations.SelectedItem      = null;
+        }
+
+        private void TuneInMedia_MediaFailed(object sender,
+            ExceptionRoutedEventArgs e)
+        {
+            TuneInNowPlayingBar.Visibility = Visibility.Collapsed;
+            LstStations.SelectedItem      = null;
+            // Optionally surface the error to the user here.
+        }
+
+        // ------------------------------------------------------------------ //
+        //  Helpers – Spotify
+        // ------------------------------------------------------------------ //
+
         private async Task RunApiCallAsync(Task apiCall)
         {
-            try
-            {
-                await apiCall;
-            }
-            catch (SpotifyApiException ex)
-            {
-                TxtDevice.Text = $"⚠ {ex.Message}";
-            }
+            try   { await apiCall; }
+            catch (SpotifyApiException ex) { TxtDevice.Text = $"⚠ {ex.Message}"; }
         }
 
         private void UpdatePlayPauseIcon()
@@ -314,11 +463,11 @@ namespace SpoutlookAddin
 
         private void ResetPlayerState()
         {
-            TxtTrackName.Text  = "Not playing";
-            TxtArtistName.Text = "–";
-            ImgAlbumArt.Source = null;
-            TxtPosition.Text   = "0:00";
-            TxtDuration.Text   = "0:00";
+            TxtTrackName.Text    = "Not playing";
+            TxtArtistName.Text   = "–";
+            ImgAlbumArt.Source   = null;
+            TxtPosition.Text     = "0:00";
+            TxtDuration.Text     = "0:00";
             SliderProgress.Value = 0;
             _currentAlbumArtUrl  = "";
         }
